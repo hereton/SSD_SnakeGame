@@ -1,8 +1,6 @@
 package main;
 
 import lib.*;
-import main.SnakeGame.Memento;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -14,120 +12,115 @@ import java.util.Observer;
 
 public class SnakeGui extends JFrame implements Observer {
 
-	private SnakeGame game;
-	private Renderer renderer;
-	private Controller controller;
-	private JButton saveButton;
-	private JButton loadButton;
+    private SnakeGame game;
+    private SnakeGame.Memento memento;
+    private Renderer renderer;
+    private Controller controller;
+    private JButton saveButton;
+    private JButton loadButton;
 
-	private Memento mento;
+    private void loadGame() {
+     loadButton.setEnabled(false);
+     game.loadGame(memento);
+    }
 
-	private void loadGame() {
-		System.out.println("game loaded");
-		this.game.load(this.mento);
-	}
+    private void saveGame() {
+     loadButton.setEnabled(true);
+        memento = game.saveGame();
+    }
 
-	private void saveGame() {
-		loadButton.setEnabled(true);
-		System.out.println("save game clicked");
-		this.mento = this.game.save();
-	}
+    public SnakeGui(SnakeGame snakeGame) {
+        game = snakeGame;
+        game.addObserver(this);
 
-	public SnakeGui(SnakeGame snakeGame) {
+        controller = new Controller();
 
-		game = snakeGame;
-		game.addObserver(this);
+        renderer = new Renderer();
+        renderer.addKeyListener(controller);
 
-		controller = new Controller();
+        setLayout(new BorderLayout());
+        add(renderer, BorderLayout.CENTER);
+        add(new JPanel() {
+            {
+                saveButton = new JButton("Save");
+                saveButton.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        saveGame();
+                        renderer.requestFocus();
+                    }
+                });
+                add(saveButton);
+                loadButton = new JButton("Load");
+                loadButton.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        loadGame();
+                        renderer.requestFocus();
+                    }
+                });
+                loadButton.setEnabled(false);
+                add(loadButton);
+            }
+        }, BorderLayout.SOUTH);
 
-		renderer = new Renderer();
-		renderer.addKeyListener(controller);
+        pack();
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        renderer.requestFocus();
+    }
 
-		setLayout(new BorderLayout());
-		add(renderer, BorderLayout.CENTER);
-		add(new JPanel() {
-			{
-				saveButton = new JButton("Save");
-				saveButton.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						saveGame();
-						renderer.requestFocus();
-					}
-				});
-				add(saveButton);
-				loadButton = new JButton("Load");
-				loadButton.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						loadGame();
-						renderer.requestFocus();
-					}
-				});
-				loadButton.setEnabled(true);
-				add(loadButton);
-			}
-		}, BorderLayout.SOUTH);
-		loadButton.setEnabled(false);
+    @Override
+    public void update(Observable o, Object arg) {
+        renderer.repaint();
+    }
 
-		pack();
-		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		renderer.requestFocus();
-	}
+    class Controller extends KeyAdapter {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            super.keyPressed(e);
+            if(e.getKeyCode() == KeyEvent.VK_UP) {
+                game.handleUpKey();
+            } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
+                game.handleDownKey();
+            } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
+                game.handleLeftKey();
+            } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                game.handleRightKey();
+            }
+        }
+    }
 
-	@Override
-	public void update(Observable o, Object arg) {
-		renderer.repaint();
-	}
+    class Renderer extends JPanel {
 
-	class Controller extends KeyAdapter {
-		@Override
-		public void keyPressed(KeyEvent e) {
-			super.keyPressed(e);
-			if (e.getKeyCode() == KeyEvent.VK_UP) {
-				game.handleUpKey();
-			} else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-				game.handleDownKey();
-			} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-				game.handleLeftKey();
-			} else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-				game.handleRightKey();
-			}
-		}
-	}
+        private int blockWidth = 20;
+        private int mapSize;
 
-	class Renderer extends JPanel {
+        public Renderer() {
+            mapSize = game.getMapSize() * blockWidth;
+            setPreferredSize(new Dimension(mapSize, mapSize));
+            setDoubleBuffered(true);
+        }
 
-		private int blockWidth = 20;
-		private int mapSize;
+        @Override
+        public void paint(Graphics g) {
+            super.paint(g);
+            paintGrids(g);
+            paintBlocks(g);
+        }
 
-		public Renderer() {
-			mapSize = game.getMapSize() * blockWidth;
-			setPreferredSize(new Dimension(mapSize, mapSize));
-			setDoubleBuffered(true);
-		}
+        private void paintGrids(Graphics g) {
+            g.setColor(Color.gray);
+            for (int i = 0; i < mapSize; i++) {
+                g.drawLine(i * blockWidth, 0, i * blockWidth, getHeight());
+                g.drawLine(0, i * blockWidth, getWidth(), i * blockWidth);
+            }
+        }
 
-		@Override
-		public void paint(Graphics g) {
-			super.paint(g);
-			paintGrids(g);
-			paintBlocks(g);
-		}
-
-		private void paintGrids(Graphics g) {
-			g.setColor(Color.gray);
-			for (int i = 0; i < mapSize; i++) {
-				g.drawLine(i * blockWidth, 0, i * blockWidth, getHeight());
-				g.drawLine(0, i * blockWidth, getWidth(), i * blockWidth);
-			}
-		}
-
-		private void paintBlocks(Graphics g) {
-			g.setColor(Color.red);
-			for (Block b : game.getBlocks()) {
-				g.fillRect(b.getX() * blockWidth, b.getY() * blockWidth, blockWidth, blockWidth);
-			}
-		}
-	}
-
+        private void paintBlocks(Graphics g) {
+            for(Block b : game.getBlocks()) {
+             g.setColor(b.getColor());
+                g.fillRect(b.getX() * blockWidth, b.getY() * blockWidth, blockWidth, blockWidth);
+            }
+        }
+    }
 }

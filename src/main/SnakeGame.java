@@ -9,17 +9,16 @@ import java.util.Random;
 public class SnakeGame extends AbstractGame {
 
 	private Random random = new Random();
-	private Map map = new Map();
+	public Map map = new Map();
 
-	private Snake snake = new Snake(10, 10);
-	private Food food = new Food(15, 15);
+	private Snake snake = new Snake(10, 10, map);
+	private Food food = new Food(random.nextInt(map.getSize() - 1) + 0, random.nextInt(map.getSize() - 1) + 0);
 
 	public SnakeGame() {
 		for (Block b : snake.getBody()) {
 			map.addBlock(b);
 		}
 		map.addBlock(food);
-
 	}
 
 	public int getMapSize() {
@@ -30,20 +29,34 @@ public class SnakeGame extends AbstractGame {
 		return map.getBlocks();
 	}
 
+	public Memento saveGame() {
+		return new Memento(snake.getBody(), food, snake.getDx(), snake.getDy());
+	}
+
+	public void loadGame(Memento m) {
+		this.snake.getBody().clear();
+		this.snake.getBody().addAll(m.body);
+		this.food = m.food;
+		this.snake.setDx(m.dx);
+		this.snake.setDy(m.dy);
+		this.map.getBlocks().clear();
+		this.map.getBlocks().addAll(snake.getBody());
+		this.map.addBlock(food);
+	}
+
 	@Override
 	protected void gameLogic() {
 		snake.move();
-		// Check if snake eat food
 		for (Block b : snake.getBody()) {
 			if (b.overlapped(food)) {
 				Block newBlock = snake.expand();
 				map.addBlock(newBlock);
-				food.setX(random.nextInt(map.getSize()));
-				food.setY(random.nextInt(map.getSize()));
+
+				food.setX(random.nextInt(map.getSize() - 1) + 0);
+				food.setY(random.nextInt(map.getSize() - 1) + 0);
 				break;
 			}
 		}
-		// Check if snake hit itself
 		if (snake.hitItself()) {
 			end();
 		}
@@ -73,42 +86,20 @@ public class SnakeGame extends AbstractGame {
 		snake.setDy(1);
 	}
 
-	public void load(Memento m) {
-		this.map.getBlocks().clear();
-		this.snake.getBody().clear();
-		for (Block b : m.snakeBlocks) {
-			this.snake.getBody().add(new Block(b.getX(), b.getY()));
-		}
-		this.snake.setDx(m.dx);
-		this.snake.setDy(m.dy);
-		for (Block b : this.snake.getBody()) {
-			this.map.addBlock(b);
-		}
-		this.food.setX(m.food.getX());
-		this.food.setY(m.food.getY());
-		this.map.addBlock(food);
-	}
+	class Memento {
+		private List<Block> body;
+		private Food food;
+		private int dx, dy;
 
-	public Memento save() {
-		return new Memento(this.snake, this.food);
-	}
-
-	static class Memento {
-
-		List<Block> snakeBlocks = new ArrayList<>();
-		Food food;
-		int dx;
-		int dy;
-
-		public Memento(Snake snake, Food food) {
-			for (Block b : snake.getBody()) {
-				snakeBlocks.add(new Block(b.getX(), b.getY()));
+		public Memento(List<Block> body, Food food, int dx, int dy) {
+			this.body = new ArrayList<Block>();
+			for (Block block : body) {
+				this.body.add(new Block(block.getX(), block.getY(), block.getColor()));
 			}
-			this.dx = snake.getDx();
-			this.dy = snake.getDy();
 			this.food = new Food(food.getX(), food.getY());
+			this.dx = dx;
+			this.dy = dy;
 		}
-
 	}
 
 }

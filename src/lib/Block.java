@@ -1,13 +1,25 @@
 package lib;
 
+import java.awt.Color;
+
 public class Block {
 
+	protected Color color;
 	protected int x;
 	protected int y;
 
-	public Block(int x, int y) {
+	public Block(int x, int y, Color color) {
+		this.color = color;
 		this.x = x;
 		this.y = y;
+	}
+
+	public Color getColor() {
+		return this.color;
+	}
+
+	public void setColor(Color color) {
+		this.color = color;
 	}
 
 	public int getX() {
